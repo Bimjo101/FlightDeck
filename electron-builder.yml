@@ -1,0 +1,28 @@
+appId: com.themediacorp.flightdeck
+productName: FlightDeck
+copyright: Copyright © 2025 The Media Corp
+
+directories:
+  buildResources: resources
+  output: dist
+
+files:
+  - out/**/*
+  - "!out/**/*.map"
+  - "!out/**/*.d.ts"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: FlightDeck
+
+# Rebuild native modules (better-sqlite3) for the packaged Electron version
+npmRebuild: true
