@@ -233,7 +233,11 @@ function ModelDetail({ model, onBack, onUpdate }: ModelDetailProps): JSX.Element
   const [localModel, setLocalModel]           = useState<RCModel>(model)
   const [photoSrc, setPhotoSrc]               = useState<string | null>(null)
   const [showEdit, setShowEdit]               = useState(false)
-  const [activeStep, setActiveStep]           = useState(0)
+  const [activeStep, setActiveStep]           = useState(() => {
+    // Clear wizard key so the wizard always runs fresh when a model is opened
+    localStorage.removeItem(`fd_wizard_${model.id}`)
+    return 3  // open on Radio Studio by default
+  })
   const [stepStatuses, setStepStatuses]       = useState<StepStatus[]>(Array(8).fill('not-started'))
   const [showLogModal, setShowLogModal]       = useState(false)
   const [flightLogs, setFlightLogs]           = useState<LogEntry[]>([])
@@ -487,12 +491,8 @@ function ModelDetail({ model, onBack, onUpdate }: ModelDetailProps): JSX.Element
     </div>
   )
 
-  // ─── Step 4: Radio Studio ────────────────────────────────────────────────────
-  const renderStep4 = (): JSX.Element => (
-    <div className="h-full -mx-8 -my-6">
-      <RadioDashboard modelName={localModel.name} />
-    </div>
-  )
+  // ─── Step 4: Radio Studio — rendered full-screen directly in layout, not here
+  const renderStep4 = (): JSX.Element => <div />
 
   // ─── Step 5: ESC ──────────────────────────────────────────────────────────
   const renderStep5 = (): JSX.Element => (
@@ -855,23 +855,32 @@ function ModelDetail({ model, onBack, onUpdate }: ModelDetailProps): JSX.Element
         style={{ background: `linear-gradient(to right, ${accent}, ${accent}40)` }}
       />
 
-      {/* ── Two-column layout ── */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* ── Radio Studio — full screen, no sidebar ── */}
+      {activeStep === 3 && (
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <RadioDashboard modelName={localModel.name} modelId={localModel.id} />
+        </div>
+      )}
 
-        {/* Left: setup checklist */}
-        <div className="w-72 shrink-0 bg-[#0d1117] border-r border-[#30363d] overflow-y-auto p-4">
-          <div className="text-[#8b949e] text-[11px] font-semibold uppercase tracking-wider mb-3 px-1">
-            Setup Checklist
+      {/* ── All other steps — two-column with checklist sidebar ── */}
+      {activeStep !== 3 && (
+        <div className="flex flex-1 overflow-hidden">
+
+          {/* Left: setup checklist */}
+          <div className="w-72 shrink-0 bg-[#0d1117] border-r border-[#30363d] overflow-y-auto p-4">
+            <div className="text-[#8b949e] text-[11px] font-semibold uppercase tracking-wider mb-3 px-1">
+              Setup Checklist
+            </div>
+            {renderStepList()}
           </div>
-          {renderStepList()}
-        </div>
 
-        {/* Right: active step content — Radio Studio (step 4) gets full height, others get padding */}
-        <div className={['flex-1 bg-[#0d1117] overflow-hidden', activeStep === 3 ? '' : 'overflow-y-auto px-8 py-6 pb-10'].join(' ')}>
-          {renderActiveStep()}
-        </div>
+          {/* Right: active step content */}
+          <div className="flex-1 bg-[#0d1117] overflow-y-auto px-8 py-6 pb-10">
+            {renderActiveStep()}
+          </div>
 
-      </div>
+        </div>
+      )}
 
       {/* ── Log Flight Modal ── */}
       {showLogModal && (

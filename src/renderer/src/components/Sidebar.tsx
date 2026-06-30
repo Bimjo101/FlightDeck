@@ -23,9 +23,12 @@ const radioItems: NavItem[] = [
   { id: 'radio', label: 'Radio Studio', icon: '📡' }
 ]
 
+const isBrowser = typeof window !== 'undefined' && !(window as any).electron
+
 function Sidebar({ activeSection, onSectionChange }: SidebarProps): JSX.Element {
   const [sdConnected, setSdConnected] = useState(false)
   const [sdDrive, setSdDrive] = useState<string | null>(null)
+  const [connecting, setConnecting] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -49,6 +52,24 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps): JSX.Element 
       clearInterval(id)
     }
   }, [])
+
+  const handleConnect = async (): Promise<void> => {
+    if (connecting) return
+    setConnecting(true)
+    try {
+      const ok = await (window.api.sdcard as any).connect()
+      if (ok) {
+        const result = await window.api.sdcard.detect()
+        setSdConnected(result.connected)
+        setSdDrive(result.drivePath)
+        onSectionChange('radio')
+      }
+    } catch {
+      // user cancelled picker
+    } finally {
+      setConnecting(false)
+    }
+  }
 
   return (
     <aside
@@ -124,25 +145,33 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps): JSX.Element 
 
       {/* SD Card Status */}
       <div className="px-4 py-3 border-t border-[#30363d]">
-        <div className="flex items-center gap-2.5">
-          <span
-            className={[
-              'w-2 h-2 rounded-full shrink-0',
-              sdConnected ? 'bg-[#3fb950]' : 'bg-[#484f58]'
-            ].join(' ')}
-            style={sdConnected ? { boxShadow: '0 0 6px #3fb950' } : undefined}
-          />
-          <div className="min-w-0">
-            {sdConnected ? (
-              <>
-                <div className="text-[#3fb950] text-[11px] font-semibold leading-tight">Radio Connected</div>
-                <div className="text-[#8b949e] text-[10px] leading-tight truncate">{sdDrive}</div>
-              </>
-            ) : (
-              <div className="text-[#484f58] text-[11px] font-medium">No Radio</div>
-            )}
+        {sdConnected ? (
+          <div className="flex items-center gap-2.5">
+            <span
+              className="w-2 h-2 rounded-full shrink-0 bg-[#3fb950]"
+              style={{ boxShadow: '0 0 6px #3fb950' }}
+            />
+            <div className="min-w-0">
+              <div className="text-[#3fb950] text-[11px] font-semibold leading-tight">Radio Connected</div>
+              <div className="text-[#8b949e] text-[10px] leading-tight truncate">{sdDrive ?? 'SD Card'}</div>
+            </div>
           </div>
-        </div>
+        ) : isBrowser ? (
+          <button
+            onClick={handleConnect}
+            disabled={connecting}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[12px] font-semibold text-white transition-all duration-150 disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}
+          >
+            <span className="text-base leading-none">📡</span>
+            {connecting ? 'Connecting…' : 'Connect Radio'}
+          </button>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full shrink-0 bg-[#484f58]" />
+            <div className="text-[#484f58] text-[11px] font-medium">No Radio</div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}

@@ -36,6 +36,18 @@ function saveModels(models: RCModel[]): void {
 // ── SD Card — File System Access API ─────────────────────────────────────────
 
 let sdDirectoryHandle: FileSystemDirectoryHandle | null = null
+let modelsDirHandle: FileSystemDirectoryHandle | null = null
+
+/** Returns the MODELS directory handle — tries MODELS/ subfolder first, falls back to selected dir */
+async function getModelsDir(): Promise<FileSystemDirectoryHandle | null> {
+  if (!sdDirectoryHandle) return null
+  try {
+    modelsDirHandle = await (sdDirectoryHandle as any).getDirectoryHandle('MODELS')
+  } catch {
+    modelsDirHandle = sdDirectoryHandle
+  }
+  return modelsDirHandle
+}
 
 /**
  * Opens the OS directory picker so the user can grant access to their EdgeTX
@@ -70,11 +82,16 @@ async function writeFileToSd(filename: string, content: string): Promise<void> {
   await writable.close()
 }
 
-/** Read a UTF-8 text file from the root of the selected SD card directory. */
+/** Read a UTF-8 text file from the SD card, supporting nested paths like MODELS/model01.yml */
 async function readFileFromSd(filename: string): Promise<string | null> {
   if (!sdDirectoryHandle) return null
   try {
-    const fileHandle = await sdDirectoryHandle.getFileHandle(filename)
+    const parts = filename.split('/')
+    let dirHandle: FileSystemDirectoryHandle = sdDirectoryHandle
+    for (let i = 0; i < parts.length - 1; i++) {
+      dirHandle = await (dirHandle as any).getDirectoryHandle(parts[i])
+    }
+    const fileHandle = await dirHandle.getFileHandle(parts[parts.length - 1])
     const file = await fileHandle.getFile()
     return await file.text()
   } catch {
@@ -236,6 +253,8 @@ export const browserApi = {
         drivePath: sdDirectoryHandle !== null ? 'browser-fs' : null
       }),
 
+    connect: (): Promise<boolean> => selectSdCard(),
+
     writeConfig: (
       _drivePath: string,
       modelName: string,
@@ -251,10 +270,68 @@ export const browserApi = {
     }
   },
 
+  // ── sounds ──────────────────────────────────────────────────────────────────
+
+  sounds: {
+    listFiles: async (): Promise<string[]> => {
+      if (!sdDirectoryHandle) return []
+      const result: string[] = []
+      try {
+        const soundsDir = await (sdDirectoryHandle as any).getDirectoryHandle('SOUNDS')
+        let enDir: FileSystemDirectoryHandle
+        try {
+          enDir = await (soundsDir as any).getDirectoryHandle('en')
+        } catch {
+          enDir = soundsDir
+        }
+        for await (const [name, handle] of (enDir as any).entries() as AsyncIterable<[string, FileSystemHandle]>) {
+          if (handle.kind === 'file' && name.toLowerCase().endsWith('.wav')) {
+            result.push(name)
+          }
+        }
+      } catch { /* SOUNDS/ not found */ }
+      return result.sort()
+    },
+
+    writeBinary: async (path: string, data: ArrayBuffer): Promise<{ success: boolean; error?: string }> => {
+      if (!sdDirectoryHandle) return { success: false, error: 'No SD card connected' }
+      try {
+        const parts = path.split('/')
+        let dir: FileSystemDirectoryHandle = sdDirectoryHandle
+        for (let i = 0; i < parts.length - 1; i++) {
+          dir = await (dir as any).getDirectoryHandle(parts[i], { create: true })
+        }
+        const fileHandle = await (dir as any).getFileHandle(parts[parts.length - 1], { create: true })
+        const writable = await (fileHandle as any).createWritable()
+        await writable.write(data)
+        await writable.close()
+        return { success: true }
+      } catch (err: unknown) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    },
+
+    readBinary: async (path: string): Promise<ArrayBuffer | null> => {
+      if (!sdDirectoryHandle) return null
+      try {
+        const parts = path.split('/')
+        let dir: FileSystemDirectoryHandle = sdDirectoryHandle
+        for (let i = 0; i < parts.length - 1; i++) {
+          dir = await (dir as any).getDirectoryHandle(parts[i])
+        }
+        const fileHandle = await (dir as any).getFileHandle(parts[parts.length - 1])
+        const file = await fileHandle.getFile()
+        return await file.arrayBuffer()
+      } catch {
+        return null
+      }
+    },
+  },
+
   // ── edgetx ──────────────────────────────────────────────────────────────────
 
   edgetx: {
-    scanSdCard: (
+    scanSdCard: async (
       _sdDrive: string
     ): Promise<{
       hasModels: boolean
@@ -264,47 +341,41 @@ export const browserApi = {
       scriptFiles: string[]
       dsmdataFiles: string[]
     }> => {
-      if (!sdDirectoryHandle) {
-        return Promise.resolve({
-          hasModels: false,
-          hasYamlModels: false,
-          yamlModelFiles: [],
-          soundFiles: [],
-          scriptFiles: [],
-          dsmdataFiles: []
-        })
-      }
-      return collectEntries(sdDirectoryHandle).then((entries) => {
-        const yamlModelFiles: string[] = []
-        const soundFiles: string[] = []
-        const scriptFiles: string[] = []
-        const dsmdataFiles: string[] = []
+      const empty = { hasModels: false, hasYamlModels: false, yamlModelFiles: [], soundFiles: [], scriptFiles: [], dsmdataFiles: [] }
+      const modelsDir = await getModelsDir()
+      if (!modelsDir) return empty
 
-        for (const { name, path } of entries) {
+      const yamlModelFiles: string[] = []
+      const dsmdataFiles: string[] = []
+      const soundFiles: string[] = []
+      const scriptFiles: string[] = []
+
+      // List the MODELS directory top-level only — skip subfolders like DELETED/UNUSED/DSMDATA
+      try {
+        for await (const [name, handle] of (modelsDir as any).entries() as AsyncIterable<[string, FileSystemHandle]>) {
+          if (handle.kind !== 'file') continue
           const lc = name.toLowerCase()
-          if (lc.endsWith('.yml') || lc.endsWith('.yaml')) {
-            yamlModelFiles.push(path)
-          } else if (lc.endsWith('.wav')) {
-            soundFiles.push(path)
-          } else if (lc.endsWith('.lua')) {
-            scriptFiles.push(path)
+          if ((lc.endsWith('.yml') || lc.endsWith('.yaml')) && lc !== 'labels.yml' && !lc.includes('.bak.')) {
+            yamlModelFiles.push(name)
           } else if (lc.endsWith('.bin') || lc.endsWith('.dsmdata')) {
-            dsmdataFiles.push(path)
+            dsmdataFiles.push(name)
           }
         }
+      } catch (e) {
+        console.warn('[FlightDeck] Error scanning MODELS dir:', e)
+      }
 
-        return {
-          hasModels: yamlModelFiles.length > 0 || dsmdataFiles.length > 0,
-          hasYamlModels: yamlModelFiles.length > 0,
-          yamlModelFiles,
-          soundFiles,
-          scriptFiles,
-          dsmdataFiles
-        }
-      })
+      return {
+        hasModels: yamlModelFiles.length > 0 || dsmdataFiles.length > 0,
+        hasYamlModels: yamlModelFiles.length > 0,
+        yamlModelFiles,
+        soundFiles,
+        scriptFiles,
+        dsmdataFiles
+      }
     },
 
-    loadModelConfig: (
+    loadModelConfig: async (
       _sdDrive: string,
       filename: string
     ): Promise<{
@@ -312,22 +383,27 @@ export const browserApi = {
       modelName?: string
       channels?: object[]
       error?: string
-    }> =>
-      readFileFromSd(filename)
-        .then((text) => {
-          if (!text) return { success: false, error: 'File not found or empty' }
-          const parsed = yamlLoad(text) as Record<string, unknown> | null
-          const header = parsed?.header as Record<string, unknown> | undefined
-          return {
-            success: true,
-            modelName: (header?.name as string | undefined) ?? filename,
-            channels: Array.isArray(parsed?.channels) ? (parsed.channels as object[]) : []
-          }
-        })
-        .catch((err: unknown) => ({
-          success: false,
-          error: err instanceof Error ? err.message : String(err)
-        })),
+    }> => {
+      try {
+        // Read directly from modelsDirHandle (set during scan)
+        const dir = modelsDirHandle ?? sdDirectoryHandle
+        if (!dir) return { success: false, error: 'No SD card connected' }
+        const baseName = filename.split('/').pop() ?? filename
+        const fileHandle = await (dir as any).getFileHandle(baseName)
+        const file = await fileHandle.getFile()
+        const text = await file.text()
+        if (!text) return { success: false, error: 'File is empty' }
+        const parsed = yamlLoad(text) as Record<string, unknown> | null
+        const header = parsed?.header as Record<string, unknown> | undefined
+        return {
+          success: true,
+          modelName: header?.name as string | undefined,
+          channels: Array.isArray(parsed?.channels) ? (parsed.channels as object[]) : []
+        }
+      } catch (err: unknown) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    },
 
     saveModelYaml: (
       _sdDrive: string,
@@ -340,6 +416,24 @@ export const browserApi = {
           success: false,
           error: err instanceof Error ? err.message : String(err)
         })),
+
+    /** Write a raw YAML string to MODELS/<filename> on the SD card */
+    writeModelYaml: async (
+      filename: string,
+      content: string
+    ): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const dir = await getModelsDir()
+        if (!dir) throw new Error('No SD card selected — connect your radio SD card first')
+        const fileHandle = await (dir as any).getFileHandle(filename, { create: true })
+        const writable = await (fileHandle as any).createWritable()
+        await writable.write(content)
+        await writable.close()
+        return { success: true }
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    },
 
     writeSetupScript: (
       _drivePath: string,

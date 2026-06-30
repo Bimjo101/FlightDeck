@@ -40,7 +40,7 @@ export function applyCustom(x: number, points: number[]): number {
 
 export function MiniCurve({
   curve,
-  color = '#2563eb',
+  color = '#3b82f6',
   width = 52,
   height = 40,
 }: {
@@ -63,7 +63,7 @@ export function MiniCurve({
   const d = 'M ' + pts.join(' L ')
   return (
     <svg width={width} height={height}
-      className="rounded-lg border border-[#30363d] bg-[#0d1117] shrink-0 cursor-pointer">
+      className="rounded-lg border border-[#334155] bg-[#0f172a] shrink-0 cursor-pointer">
       <line x1={P} y1={height / 2} x2={width - P} y2={height / 2}
         stroke="#1c2128" strokeWidth={0.75} />
       <line x1={width / 2} y1={P} x2={width / 2} y2={height - P}
@@ -112,7 +112,7 @@ interface CurveEditorProps {
   accentColor?: string
 }
 
-export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }: CurveEditorProps): JSX.Element {
+export default function CurveEditor({ curve, onChange, accentColor = '#3b82f6' }: CurveEditorProps): JSX.Element {
   const svgRef = useRef<SVGSVGElement>(null)
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
@@ -179,17 +179,17 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
     <div className="space-y-3">
       {/* Mode toggle + presets */}
       <div className="flex items-center flex-wrap gap-2">
-        <div className="flex rounded-lg overflow-hidden border border-[#30363d]">
+        <div className="flex rounded-lg overflow-hidden border border-[#334155]">
           <button
             onClick={switchToExpo}
             className={`px-3 py-1 text-xs font-medium transition-colors ${
-              curve.type === 'expo' ? 'bg-[#21262d] text-[#e6edf3]' : 'text-[#8b949e] hover:text-[#e6edf3]'
+              curve.type === 'expo' ? 'bg-[#243044] text-[#f1f5f9]' : 'text-[#94a3b8] hover:text-[#f1f5f9]'
             }`}
           >Expo</button>
           <button
             onClick={switchToCustom}
-            className={`px-3 py-1 text-xs font-medium border-l border-[#30363d] transition-colors ${
-              curve.type === 'custom' ? 'bg-[#21262d] text-[#e6edf3]' : 'text-[#8b949e] hover:text-[#e6edf3]'
+            className={`px-3 py-1 text-xs font-medium border-l border-[#334155] transition-colors ${
+              curve.type === 'custom' ? 'bg-[#243044] text-[#f1f5f9]' : 'text-[#94a3b8] hover:text-[#f1f5f9]'
             }`}
           >Custom</button>
         </div>
@@ -199,8 +199,8 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
             <button
               key={p.label}
               onClick={() => onChange(p.curve)}
-              className="px-2 py-1 text-[10px] rounded-md border border-[#30363d] hover:border-[#2563eb]
-                text-[#8b949e] hover:text-[#2563eb] transition-all"
+              className="px-2 py-1 text-[10px] rounded-md border border-[#334155] hover:border-[#3b82f6]
+                text-[#94a3b8] hover:text-[#3b82f6] transition-all"
             >
               {p.label}
             </button>
@@ -215,16 +215,16 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
             ref={svgRef}
             width={SZ}
             height={SZ}
-            className="rounded-xl border border-[#30363d] bg-[#0d1117]"
+            className="rounded-xl border border-[#334155] bg-[#0f172a]"
             style={{ cursor: curve.type === 'custom' ? 'crosshair' : 'default', userSelect: 'none' }}
           >
             {/* Grid lines */}
             {gridLines.map((v) => (
               <g key={v}>
                 <line x1={ix(v)} y1={PAD} x2={ix(v)} y2={SZ - PAD}
-                  stroke={v === 0 ? '#30363d' : '#1c2128'} strokeWidth={v === 0 ? 1.5 : 1} />
+                  stroke={v === 0 ? '#334155' : '#1c2128'} strokeWidth={v === 0 ? 1.5 : 1} />
                 <line x1={PAD} y1={iy(v)} x2={SZ - PAD} y2={iy(v)}
-                  stroke={v === 0 ? '#30363d' : '#1c2128'} strokeWidth={v === 0 ? 1.5 : 1} />
+                  stroke={v === 0 ? '#334155' : '#1c2128'} strokeWidth={v === 0 ? 1.5 : 1} />
               </g>
             ))}
 
@@ -232,9 +232,9 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
             {[-100, -50, 50, 100].map((v) => (
               <g key={`lbl-${v}`}>
                 <text x={ix(v)} y={iy(0) + 12} textAnchor="middle"
-                  fontSize="8" fill="#484f58">{v > 0 ? `+${v}` : v}</text>
+                  fontSize="8" fill="#475569">{v > 0 ? `+${v}` : v}</text>
                 <text x={PAD - 4} y={iy(v) + 3} textAnchor="end"
-                  fontSize="8" fill="#484f58">{v > 0 ? `+${v}` : v}</text>
+                  fontSize="8" fill="#475569">{v > 0 ? `+${v}` : v}</text>
               </g>
             ))}
 
@@ -280,7 +280,7 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
                   <circle
                     cx={ix(xv)} cy={iy(yv)}
                     r={dragging ? 7 : hovered ? 6 : 4}
-                    fill={dragging || hovered ? accentColor : '#161b22'}
+                    fill={dragging || hovered ? accentColor : '#1e293b'}
                     stroke={accentColor}
                     strokeWidth={2}
                   />
@@ -302,7 +302,7 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
             })}
 
             {/* Center crosshair dot */}
-            <circle cx={ix(0)} cy={iy(0)} r={2.5} fill="#30363d" />
+            <circle cx={ix(0)} cy={iy(0)} r={2.5} fill="#334155" />
           </svg>
         </div>
 
@@ -311,7 +311,7 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
           <div className="flex-1 space-y-3 pt-1">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[#8b949e] text-xs font-semibold uppercase tracking-wider">Expo</span>
+                <span className="text-[#94a3b8] text-xs font-semibold uppercase tracking-wider">Expo</span>
                 <span className="font-mono text-sm font-bold" style={{ color: accentColor }}>
                   {curve.expo > 0 ? '+' : ''}{curve.expo}%
                 </span>
@@ -322,26 +322,26 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
                 max={100}
                 value={curve.expo}
                 onChange={(e) => onChange({ ...curve, expo: Number(e.target.value) })}
-                className="w-full h-2 rounded-full"
+                className="w-full accent-[#3b82f6]"
                 style={{ accentColor }}
               />
-              <div className="flex justify-between text-[10px] text-[#484f58] mt-1">
+              <div className="flex justify-between text-[10px] text-[#475569] mt-1">
                 <span>−100 Sharp</span>
                 <span>0 Linear</span>
                 <span>+100 Soft</span>
               </div>
             </div>
 
-            <div className="rounded-lg bg-[#0d1117] border border-[#30363d] p-3 space-y-1 text-[10px] text-[#8b949e]">
-              <div className="text-[#e6edf3] font-semibold text-[11px] mb-1">What expo does</div>
+            <div className="rounded-lg bg-[#0f172a] border border-[#334155] p-3 space-y-1 text-[10px] text-[#94a3b8]">
+              <div className="text-[#f1f5f9] font-semibold text-[11px] mb-1">What expo does</div>
               {curve.expo === 0 && <div>Linear — every stick millimeter = same output.</div>}
               {curve.expo > 0 && curve.expo <= 30 && <div>Slight softening around center — good for sport.</div>}
               {curve.expo > 30 && curve.expo <= 55 && <div>Moderate soft center — comfortable for all-around flying.</div>}
               {curve.expo > 55 && <div>Heavy soft center — very forgiving for beginners or slow flight.</div>}
               {curve.expo < 0 && curve.expo >= -30 && <div>Slight sharpening — more direct response at center.</div>}
               {curve.expo < -30 && <div>Very direct center feel — good for 3D or precision sport.</div>}
-              <div className="mt-1.5 pt-1.5 border-t border-[#21262d]">
-                Switch to <span className="text-[#e6edf3]">Custom</span> to drag individual points
+              <div className="mt-1.5 pt-1.5 border-t border-[#243044]">
+                Switch to <span className="text-[#f1f5f9]">Custom</span> to drag individual points
                 or load an S-curve preset.
               </div>
             </div>
@@ -351,8 +351,8 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
         {/* Custom mode instructions */}
         {curve.type === 'custom' && (
           <div className="flex-1 space-y-3 pt-1">
-            <div className="rounded-lg bg-[#0d1117] border border-[#30363d] p-3 space-y-1 text-[10px] text-[#8b949e]">
-              <div className="text-[#e6edf3] font-semibold text-[11px] mb-1">Custom curve — drag points</div>
+            <div className="rounded-lg bg-[#0f172a] border border-[#334155] p-3 space-y-1 text-[10px] text-[#94a3b8]">
+              <div className="text-[#f1f5f9] font-semibold text-[11px] mb-1">Custom curve — drag points</div>
               <div>Drag the 9 control points up or down to shape the curve.</div>
               <div>Center point (0,0) is locked to origin.</div>
               <div>An S-curve gives soft center AND soft extremes — good for scale flying.</div>
@@ -360,8 +360,8 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
             </div>
 
             {/* Point table */}
-            <div className="rounded-lg border border-[#30363d] overflow-hidden">
-              <div className="grid text-[10px] text-[#8b949e] px-3 py-1.5 border-b border-[#30363d]"
+            <div className="rounded-lg border border-[#334155] overflow-hidden">
+              <div className="grid text-[10px] text-[#94a3b8] px-3 py-1.5 border-b border-[#334155]"
                 style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                 {POINT_X.map((x) => <span key={x} className="text-center font-mono">{x}</span>)}
               </div>
@@ -378,7 +378,7 @@ export default function CurveEditor({ curve, onChange, accentColor = '#2563eb' }
                       pts[i] = Math.max(-100, Math.min(100, Number(e.target.value)))
                       onChange({ ...curve, points: pts })
                     }}
-                    className="w-full bg-transparent text-center text-[10px] text-[#e6edf3]
+                    className="w-full bg-transparent text-center text-[10px] text-[#f1f5f9]
                       border-0 focus:outline-none font-mono"
                   />
                 ))}

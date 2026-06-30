@@ -27,13 +27,13 @@ const CHANNEL_CONFIG: { key: ChannelKey; label: string }[] = [
 ]
 
 function gainColor(val: number): string {
-  if (val <= 40) return '#3fb950'
+  if (val <= 40) return '#22c55e'
   if (val <= 70) return '#d29922'
   return '#f85149'
 }
 
 function gainBg(val: number): string {
-  if (val <= 40) return '#3fb95020'
+  if (val <= 40) return '#22c55e20'
   if (val <= 70) return '#d2992220'
   return '#f8514920'
 }
@@ -170,8 +170,8 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
   const anyGainHigh = formData.roll_gain > 75 || formData.pitch_gain > 75 || formData.yaw_gain > 75
 
   const selectClass =
-    'bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-[#e6edf3] text-sm focus:outline-none focus:border-[#2563eb] transition-colors'
-  const labelClass = 'text-[#8b949e] text-[12px] font-semibold uppercase tracking-wider'
+    'bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-[#f1f5f9] text-sm focus:outline-none focus:border-[#3b82f6] transition-colors'
+  const labelClass = 'text-[#94a3b8] text-[12px] font-semibold uppercase tracking-wider'
 
   return (
     <div className="space-y-6">
@@ -191,9 +191,9 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
           width: 18px;
           height: 18px;
           border-radius: 50%;
-          background: #2563eb;
+          background: #3b82f6;
           cursor: pointer;
-          border: 2px solid #1d4ed8;
+          border: 2px solid #2563eb;
           box-shadow: 0 1px 4px rgba(0,0,0,0.5);
         }
         .fp-slider::-webkit-slider-thumb:hover {
@@ -202,11 +202,11 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
       `}</style>
 
       {/* AS3X Gains */}
-      <div className="bg-[#161b22] rounded-xl border border-[#30363d] p-5">
+      <div className="bg-[#1e293b] rounded-xl border border-[#334155] p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-[#e6edf3] font-semibold text-[14px]">AS3X Gains</h3>
-            <p className="text-[#8b949e] text-[12px] mt-0.5">Stabilization sensitivity per axis</p>
+            <h3 className="text-[#f1f5f9] font-semibold text-[14px]">AS3X Gains</h3>
+            <p className="text-[#94a3b8] text-[12px] mt-0.5">Stabilization sensitivity per axis</p>
           </div>
           <div className="flex items-center gap-2">
             <span className={labelClass}>Frame Rate</span>
@@ -231,17 +231,17 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
         )}
 
         {/* Quick-start suggested values */}
-        <div className="mb-4 flex items-center gap-3 p-3 bg-[#0d1117] rounded-lg border border-[#30363d]">
+        <div className="mb-4 flex items-center gap-3 p-3 bg-[#0f172a] rounded-lg border border-[#334155]">
           <div className="flex-1">
-            <p className="text-[#8b949e] text-[12px]">
-              <span className="text-[#e6edf3] font-medium">Not sure where to start?</span>
+            <p className="text-[#94a3b8] text-[12px]">
+              <span className="text-[#f1f5f9] font-medium">Not sure where to start?</span>
               {' '}Conservative gains for a sport/warbird — adjust after first flight.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setFormData(prev => ({ ...prev, roll_gain: 30, pitch_gain: 28, yaw_gain: 22 }))}
-            className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#2563eb20] text-[#60a5fa] border border-[#2563eb40] hover:bg-[#2563eb30] transition-colors whitespace-nowrap"
+            className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#3b82f620] text-[#60a5fa] border border-[#3b82f640] hover:bg-[#3b82f630] transition-colors whitespace-nowrap"
           >
             Use 30 / 28 / 22
           </button>
@@ -256,26 +256,29 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
             return (
               <div key={key}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[#e6edf3] text-sm font-medium w-12">{label}</span>
+                  <span className="text-[#f1f5f9] text-sm font-medium w-12">{label}</span>
                   <div className="flex items-center gap-3 flex-1 ml-4">
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={val}
-                      onChange={(e) => setGain(key, parseInt(e.target.value))}
-                      className="fp-slider"
-                      style={{
-                        background: `linear-gradient(to right, ${color} ${pct}%, #21262d ${pct}%)`
-                      }}
-                    />
+                    <div className="relative flex-1" style={{ height: 44 }}>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={val}
+                        onChange={(e) => setGain(key, parseInt(e.target.value))}
+                        className="fp-slider absolute inset-x-0"
+                        style={{
+                          top: 11,
+                          background: `linear-gradient(to right, ${color} ${pct}%, #243044 ${pct}%)`
+                        }}
+                      />
+                    </div>
                     <input
                       type="number"
                       min={0}
                       max={100}
                       value={val}
                       onChange={(e) => setGain(key, parseInt(e.target.value) || 0)}
-                      className="w-16 bg-[#0d1117] border border-[#30363d] rounded-lg px-2 py-1.5 text-[#e6edf3] text-sm text-center focus:outline-none focus:border-[#2563eb] transition-colors"
+                      className="w-16 bg-[#0f172a] border border-[#334155] rounded-lg px-2 py-1.5 text-[#f1f5f9] text-sm text-center focus:outline-none focus:border-[#3b82f6] transition-colors"
                     />
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
@@ -301,10 +304,10 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
       </div>
 
       {/* SAFE Select — full guided setup */}
-      <div className="bg-[#161b22] rounded-xl border border-[#30363d] p-5 space-y-4">
+      <div className="bg-[#1e293b] rounded-xl border border-[#334155] p-5 space-y-4">
         <div>
-          <h3 className="text-[#e6edf3] font-semibold text-[14px]">SAFE Select — Switch SB</h3>
-          <p className="text-[#8b949e] text-[12px] mt-0.5">
+          <h3 className="text-[#f1f5f9] font-semibold text-[14px]">SAFE Select — Switch SB</h3>
+          <p className="text-[#94a3b8] text-[12px] mt-0.5">
             Toggle beginner mode on/off from the field using Switch SB
           </p>
         </div>
@@ -312,13 +315,13 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
         {/* What each mode does */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl border border-[#16a34a40] bg-[#16a34a0c] p-3">
-            <div className="text-[#3fb950] text-[11px] font-bold uppercase tracking-wider mb-1">SB UP → SAFE ON</div>
+            <div className="text-[#22c55e] text-[11px] font-bold uppercase tracking-wider mb-1">SB UP → SAFE ON</div>
             <p className="text-[#c9d1d9] text-[12px] leading-relaxed">
               Plane self-levels when you let go of the sticks. Bank and pitch angles are limited.
               Good for takeoff, landing, or if things go wrong.
             </p>
           </div>
-          <div className="rounded-xl border border-[#2563eb40] bg-[#2563eb0c] p-3">
+          <div className="rounded-xl border border-[#3b82f640] bg-[#3b82f60c] p-3">
             <div className="text-[#60a5fa] text-[11px] font-bold uppercase tracking-wider mb-1">SB DOWN → SAFE OFF</div>
             <p className="text-[#c9d1d9] text-[12px] leading-relaxed">
               AS3X only — gyro smooths wind and vibration but no angle limits.
@@ -328,8 +331,8 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
         </div>
 
         {/* Steps to assign SB in EdgeTX */}
-        <div className="bg-[#0d1117] rounded-xl border border-[#30363d] p-4">
-          <div className="text-[#8b949e] text-[11px] font-semibold uppercase tracking-wider mb-3">
+        <div className="bg-[#0f172a] rounded-xl border border-[#334155] p-4">
+          <div className="text-[#94a3b8] text-[11px] font-semibold uppercase tracking-wider mb-3">
             On Your RadioMaster — assign SB to CH5
           </div>
           <ol className="space-y-2">
@@ -343,7 +346,7 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
               'If it\'s backwards, change Weight to -100 to flip it',
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-2.5">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-[#21262d] border border-[#30363d] flex items-center justify-center text-[10px] font-bold text-[#8b949e] mt-0.5">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-[#243044] border border-[#334155] flex items-center justify-center text-[10px] font-bold text-[#94a3b8] mt-0.5">
                   {i + 1}
                 </span>
                 <span className="text-[#c9d1d9] text-[12px] leading-relaxed">{step}</span>
@@ -355,8 +358,8 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
         {/* SAFE enabled toggle — records that SAFE is configured on this model */}
         <div className="flex items-center justify-between pt-1">
           <div>
-            <p className="text-[#e6edf3] text-sm font-medium">Mark SAFE as configured</p>
-            <p className="text-[#8b949e] text-[12px] mt-0.5">Records that SB/CH5 SAFE is set up on this model</p>
+            <p className="text-[#f1f5f9] text-sm font-medium">Mark SAFE as configured</p>
+            <p className="text-[#94a3b8] text-[12px] mt-0.5">Records that SB/CH5 SAFE is set up on this model</p>
           </div>
           <button
             type="button"
@@ -379,24 +382,24 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
       </div>
 
       {/* Reverse Thrust — Switch SF */}
-      <div className="bg-[#161b22] rounded-xl border border-[#30363d] p-5 space-y-4">
+      <div className="bg-[#1e293b] rounded-xl border border-[#334155] p-5 space-y-4">
         <div>
-          <h3 className="text-[#e6edf3] font-semibold text-[14px]">Reverse Thrust — Switch SF</h3>
-          <p className="text-[#8b949e] text-[12px] mt-0.5">
+          <h3 className="text-[#f1f5f9] font-semibold text-[14px]">Reverse Thrust — Switch SF</h3>
+          <p className="text-[#94a3b8] text-[12px] mt-0.5">
             Motor runs backward when SF is activated — useful for slowing down on the ground
           </p>
         </div>
 
         <div className="bg-[#d2992218] border border-[#d2992240] rounded-xl px-4 py-3">
           <div className="text-[#d29922] text-[11px] font-bold uppercase tracking-wider mb-1">ESC Requirement</div>
-          <p className="text-[#e6edf3] text-[12px] leading-relaxed">
+          <p className="text-[#f1f5f9] text-[12px] leading-relaxed">
             Reverse thrust requires a <strong>bidirectional ESC</strong> — the stock E-flite 40A does not support it.
             You need a Castle Creations Talon/Mamba, Hobbywing Platinum with reverse, or similar.
           </p>
         </div>
 
-        <div className="bg-[#0d1117] rounded-xl border border-[#30363d] p-4">
-          <div className="text-[#8b949e] text-[11px] font-semibold uppercase tracking-wider mb-3">
+        <div className="bg-[#0f172a] rounded-xl border border-[#334155] p-4">
+          <div className="text-[#94a3b8] text-[11px] font-semibold uppercase tracking-wider mb-3">
             If your ESC supports reverse — set up SF in EdgeTX
           </div>
           <ol className="space-y-2">
@@ -409,7 +412,7 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
               'Test on the ground — verify forward thrust stops before reverse kicks in',
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-2.5">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-[#21262d] border border-[#30363d] flex items-center justify-center text-[10px] font-bold text-[#8b949e] mt-0.5">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-[#243044] border border-[#334155] flex items-center justify-center text-[10px] font-bold text-[#94a3b8] mt-0.5">
                   {i + 1}
                 </span>
                 <span className="text-[#c9d1d9] text-[12px] leading-relaxed">{step}</span>
@@ -420,17 +423,17 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
       </div>
 
       {/* Write Setup Script to Radio */}
-      <div className="bg-[#161b22] rounded-xl border border-[#2563eb30] p-5 space-y-4">
+      <div className="bg-[#1e293b] rounded-xl border border-[#3b82f630] p-5 space-y-4">
         <div className="flex items-start gap-3">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
-            style={{ background: '#2563eb18', border: '1px solid #2563eb40' }}
+            style={{ background: '#3b82f618', border: '1px solid #3b82f640' }}
           >
             📡
           </div>
           <div>
-            <h3 className="text-[#e6edf3] font-semibold text-[14px]">Write Setup Script to Radio</h3>
-            <p className="text-[#8b949e] text-[12px] mt-0.5">
+            <h3 className="text-[#f1f5f9] font-semibold text-[14px]">Write Setup Script to Radio</h3>
+            <p className="text-[#94a3b8] text-[12px] mt-0.5">
               Plug in your TX16S, select USB Storage on the radio, then click below.
               FlightDeck writes a script that configures SB for SAFE Select automatically.
             </p>
@@ -438,7 +441,7 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
         </div>
 
         {/* Step list */}
-        <div className="bg-[#0d1117] rounded-xl border border-[#30363d] p-4 space-y-2">
+        <div className="bg-[#0f172a] rounded-xl border border-[#334155] p-4 space-y-2">
           {[
             'Plug USB-C into your TX16S (top port)',
             'On the radio: select USB Storage when prompted',
@@ -448,7 +451,7 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
             'Script runs, wires up SB, exits — you\'re done forever',
           ].map((step, i) => (
             <div key={i} className="flex items-start gap-2.5">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-[#2563eb18] border border-[#2563eb40] flex items-center justify-center text-[10px] font-bold text-[#60a5fa] mt-0.5">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-[#3b82f618] border border-[#3b82f640] flex items-center justify-center text-[10px] font-bold text-[#60a5fa] mt-0.5">
                 {i + 1}
               </span>
               <span className="text-[#c9d1d9] text-[12px] leading-relaxed">{step}</span>
@@ -478,14 +481,14 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
             className={[
               'flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors',
               sdDrive
-                ? 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white'
-                : 'bg-[#21262d] text-[#484f58] border border-[#30363d] cursor-not-allowed'
+                ? 'bg-[#3b82f6] hover:bg-[#2563eb] text-white'
+                : 'bg-[#243044] text-[#475569] border border-[#334155] cursor-not-allowed'
             ].join(' ')}
           >
             {writingScript ? 'Writing...' : sdDrive ? `Write Script to Radio (${sdDrive})` : 'No Radio Detected'}
           </button>
           {!sdDrive && (
-            <span className="text-[#484f58] text-[12px]">
+            <span className="text-[#475569] text-[12px]">
               Plug in TX16S and select USB Storage
             </span>
           )}
@@ -493,14 +496,14 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
       </div>
 
       {/* Channel Assignment */}
-      <div className="bg-[#161b22] rounded-xl border border-[#30363d] p-5">
-        <h3 className="text-[#e6edf3] font-semibold text-[14px] mb-1">Channel Assignment</h3>
-        <p className="text-[#8b949e] text-[12px] mb-4">Map receiver channels to control functions</p>
+      <div className="bg-[#1e293b] rounded-xl border border-[#334155] p-5">
+        <h3 className="text-[#f1f5f9] font-semibold text-[14px] mb-1">Channel Assignment</h3>
+        <p className="text-[#94a3b8] text-[12px] mb-4">Map receiver channels to control functions</p>
 
         <div className="space-y-2.5">
           {CHANNEL_CONFIG.map(({ key, label }) => (
             <div key={key} className="flex items-center gap-4">
-              <span className="text-[#8b949e] text-[12px] font-semibold uppercase tracking-wider w-10 shrink-0">
+              <span className="text-[#94a3b8] text-[12px] font-semibold uppercase tracking-wider w-10 shrink-0">
                 {label}
               </span>
               <select
@@ -523,7 +526,7 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-50 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] disabled:opacity-50 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
         >
           {saving ? (
             <span className="opacity-75">Saving...</span>
@@ -541,8 +544,8 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
           className={[
             'flex items-center gap-2 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors border',
             sdDrive
-              ? 'bg-[#21262d] hover:bg-[#30363d] text-[#e6edf3] border-[#30363d] hover:border-[#484f58]'
-              : 'bg-[#161b22] text-[#484f58] border-[#30363d] cursor-not-allowed'
+              ? 'bg-[#243044] hover:bg-[#334155] text-[#f1f5f9] border-[#334155] hover:border-[#475569]'
+              : 'bg-[#1e293b] text-[#475569] border-[#334155] cursor-not-allowed'
           ].join(' ')}
           title={sdDrive ? `Write to ${sdDrive}` : 'No radio connected'}
         >
@@ -557,7 +560,7 @@ function ForwardProgramming({ model, onSave }: ForwardProgrammingProps): JSX.Ele
         </button>
 
         {!sdDrive && (
-          <span className="text-[#484f58] text-[12px]">No radio detected</span>
+          <span className="text-[#475569] text-[12px]">No radio detected</span>
         )}
       </div>
 
