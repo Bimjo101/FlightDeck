@@ -34,6 +34,10 @@ export interface MixWizardResult {
     switchId?: string
     minuteBeeps: boolean
   }
+  landingGear?: {
+    switchId: string
+    channel: number
+  }
 }
 
 interface Props {
@@ -54,6 +58,7 @@ type MixStep =
   | 'elevon'
   | 'vtail'
   | 'diffThrust'
+  | 'landingGear'
   | 'summary'
 
 // ─── Airframe cards ───────────────────────────────────────────────────────────
@@ -1438,10 +1443,90 @@ function StepConvRevThrust({
   )
 }
 
+// ─── Step: Landing Gear ────────────────────────────────────────────────────────
+
+function StepLandingGear({
+  selected, onSelect, channel, onChannelChange, onNext, onBack, onSkip, usedBy = {},
+}: {
+  selected: string | null
+  onSelect: (id: string) => void
+  channel: number
+  onChannelChange: (ch: number) => void
+  onNext: () => void
+  onBack: () => void
+  onSkip: () => void
+  usedBy?: Record<string, string>
+}): JSX.Element {
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <Banner
+        step="Final Step · Optional"
+        label="Landing Gear"
+        sub="A 2-position switch that retracts or deploys your gear. Direct channel routing — no logical mix needed."
+      />
+      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+
+        <div className="bg-[#0f172a] border border-[#334155] rounded-2xl p-5 space-y-3">
+          <p className="text-[#f1f5f9] text-base font-bold mb-1">Gear channel</p>
+          <div className="flex gap-2">
+            {[5, 6, 7, 8].map((ch) => (
+              <button
+                key={ch}
+                onClick={() => onChannelChange(ch)}
+                className={`flex-1 py-3 rounded-xl border-2 text-base font-bold transition-all ${
+                  channel === ch
+                    ? 'bg-amber-900/40 border-amber-400 text-amber-200'
+                    : 'bg-[#0a1628] border-[#1a3050] text-[#94a3b8] hover:border-[#334155]'
+                }`}
+              >
+                CH{ch}
+              </button>
+            ))}
+          </div>
+          <p className="text-[#64748b] text-xs">CH7 is the common default if your radio's left it free.</p>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <p className="text-[#f1f5f9] text-lg font-bold">Pick your gear switch</p>
+            <p className="text-[#64748b] text-sm mt-1">
+              A 2-position switch you'd notice instantly if flipped by accident.
+              {selected && <span className="text-amber-300 font-bold ml-2">{selected} selected ✓</span>}
+            </p>
+          </div>
+          <ControlPicker selected={selected ?? ''} onSelect={onSelect} usedBy={usedBy} />
+          <RadioDiagram selected={selected ?? ''} onSelect={onSelect} usedBy={usedBy} />
+        </div>
+
+        {selected && (
+          <div className="bg-[#0a1628] border border-[#1a3050] rounded-2xl p-4 space-y-2">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-green-400 text-base">✓</span>
+              <p className="text-green-300 text-sm font-bold">Written into your model file automatically.</p>
+            </div>
+            <p className="text-[#94a3b8] text-sm font-mono">{selected} → direct routing to CH{channel}</p>
+            <p className="text-[#475569] text-xs leading-relaxed">
+              No logical switch needed — the gear servo/retract unit follows the switch position 1:1.
+            </p>
+          </div>
+        )}
+
+        <NavRow
+          onBack={onBack}
+          onNext={onNext}
+          onSkip={onSkip}
+          nextLabel="Next →"
+          nextDisabled={!selected}
+        />
+      </div>
+    </div>
+  )
+}
+
 // ─── Step: Summary ────────────────────────────────────────────────────────────
 
 function StepSummary({
-  airframe, elevon, vTail, diffThrust, diffAileron, throttleCutSwitch, throttleCutMode, flapEleComps, thrRudMix, revThrustSwitch, onFinish, onBack,
+  airframe, elevon, vTail, diffThrust, diffAileron, throttleCutSwitch, throttleCutMode, flapEleComps, thrRudMix, revThrustSwitch, landingGear, onFinish, onBack,
 }: {
   airframe: AirframeType | null
   elevon?: ElevonConfig
@@ -1453,6 +1538,7 @@ function StepSummary({
   flapEleComps?: number[]
   thrRudMix?: number
   revThrustSwitch?: string
+  landingGear?: { switchId: string; channel: number }
   onFinish: () => void
   onBack: () => void
 }): JSX.Element {
@@ -1634,6 +1720,17 @@ function StepSummary({
           </div>
         )}
 
+        {/* Landing gear summary */}
+        {landingGear && (
+          <div className="bg-[#0a1628] border border-[#1a3050] rounded-2xl p-5 space-y-2">
+            <p className="text-amber-300 text-sm font-bold uppercase tracking-wider">Landing Gear</p>
+            <p className="text-[#f1f5f9] text-lg font-black">
+              {landingGear.switchId} → CH{landingGear.channel}
+            </p>
+            <p className="text-[#64748b] text-sm">Direct channel routing — no logical switch needed.</p>
+          </div>
+        )}
+
         <div className="flex gap-3 pt-2">
           <button onClick={onBack}
             className="px-5 py-3 rounded-2xl border border-[#334155] text-[#94a3b8] hover:text-[#f1f5f9] text-base font-semibold transition-all">
@@ -1668,6 +1765,8 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
   const [flightTimerCfg, setFlightTimerCfg] = useState<FlightTimerCfg>({
     enabled: false, mode: 'up', duration: 10, trigger: 'throttle', switchId: null, minuteBeeps: true,
   })
+  const [landingGearSw, setLandingGearSw]   = useState<string | null>(null)
+  const [landingGearCh, setLandingGearCh]   = useState(7)
 
   const isConv = (af: AirframeType | null) =>
     af === 'conventional' || af === 'glider' || af === 'efJet'
@@ -1680,24 +1779,40 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
   const ftUsedBy: Record<string, string> = { ...globalUsedBy }
   if (throttleCutSw) ftUsedBy[throttleCutSw] = 'Throttle Cut'
   if (revThrustSwitch) ftUsedBy[revThrustSwitch] = 'Reverse Thrust'
+  if (landingGearSw) ftUsedBy[landingGearSw] = 'Landing Gear'
 
   const tcUsedBy: Record<string, string> = { ...globalUsedBy }
   if (revThrustSwitch) tcUsedBy[revThrustSwitch] = 'Reverse Thrust'
   if (flightTimerCfg.switchId) tcUsedBy[flightTimerCfg.switchId] = 'Flight Timer'
+  if (landingGearSw) tcUsedBy[landingGearSw] = 'Landing Gear'
 
   const rtUsedBy: Record<string, string> = { ...globalUsedBy }
   if (throttleCutSw) rtUsedBy[throttleCutSw] = 'Throttle Cut'
   if (flightTimerCfg.switchId) rtUsedBy[flightTimerCfg.switchId] = 'Flight Timer'
+  if (landingGearSw) rtUsedBy[landingGearSw] = 'Landing Gear'
+
+  const lgUsedBy: Record<string, string> = { ...globalUsedBy }
+  if (throttleCutSw) lgUsedBy[throttleCutSw] = 'Throttle Cut'
+  if (revThrustSwitch) lgUsedBy[revThrustSwitch] = 'Reverse Thrust'
+  if (flightTimerCfg.switchId) lgUsedBy[flightTimerCfg.switchId] = 'Flight Timer'
 
   // Deconflict: picking a switch for one function auto-clears it from the others
   const pickThrottleCutSw = (id: string) => {
     setThrottleCutSw(id)
     if (id && revThrustSwitch === id) setRevThrustSwitch(null)
     if (id && flightTimerCfg.switchId === id) setFlightTimerCfg(prev => ({ ...prev, switchId: null }))
+    if (id && landingGearSw === id) setLandingGearSw(null)
   }
   const pickRevThrustSwitch = (id: string) => {
     setRevThrustSwitch(id)
     if (id && throttleCutSw === id) setThrottleCutSw(null)
+    if (id && flightTimerCfg.switchId === id) setFlightTimerCfg(prev => ({ ...prev, switchId: null }))
+    if (id && landingGearSw === id) setLandingGearSw(null)
+  }
+  const pickLandingGearSw = (id: string) => {
+    setLandingGearSw(id)
+    if (id && throttleCutSw === id) setThrottleCutSw(null)
+    if (id && revThrustSwitch === id) setRevThrustSwitch(null)
     if (id && flightTimerCfg.switchId === id) setFlightTimerCfg(prev => ({ ...prev, switchId: null }))
   }
   const handleFlightTimerChange = (cfg: FlightTimerCfg) => {
@@ -1705,6 +1820,7 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
     if (cfg.switchId) {
       if (throttleCutSw === cfg.switchId) setThrottleCutSw(null)
       if (revThrustSwitch === cfg.switchId) setRevThrustSwitch(null)
+      if (landingGearSw === cfg.switchId) setLandingGearSw(null)
     }
   }
 
@@ -1728,6 +1844,7 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
       switchId:     (flightTimerCfg.trigger === 'switch' && flightTimerCfg.switchId) ? flightTimerCfg.switchId : undefined,
       minuteBeeps:  flightTimerCfg.minuteBeeps,
     } : undefined,
+    landingGear: landingGearSw ? { switchId: landingGearSw, channel: landingGearCh } : undefined,
   })
 
   const afterAirframe = (): void => {
@@ -1743,7 +1860,7 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
     else if (airframe === 'flyingWing') setStep('elevon')
     else if (airframe === 'vTail')      setStep('vtail')
     else if (airframe === 'twinMotor')  setStep('diffThrust')
-    else setStep('summary')
+    else setStep('landingGear')
   }
 
   const backFromStep = (): void => {
@@ -1762,6 +1879,8 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
     } else if (step === 'convRevThrust') {
       setStep('convThrRud')
     } else if (step === 'summary') {
+      setStep('landingGear')
+    } else if (step === 'landingGear') {
       if (isConv(airframe))               setStep('convRevThrust')
       else if (airframe === 'flyingWing') setStep('elevon')
       else if (airframe === 'vTail')      setStep('vtail')
@@ -1840,26 +1959,45 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
     <StepConvRevThrust
       selected={revThrustSwitch}
       onSelect={pickRevThrustSwitch}
-      onApply={(sw) => { pickRevThrustSwitch(sw); setStep('summary') }}
+      onApply={(sw) => { pickRevThrustSwitch(sw); setStep('landingGear') }}
       onBack={() => setStep('convThrRud')}
-      onSkip={() => { setRevThrustSwitch(null); setStep('summary') }}
+      onSkip={() => { setRevThrustSwitch(null); setStep('landingGear') }}
       usedBy={rtUsedBy}
     />
   )
 
   if (step === 'elevon') return (
     <StepElevon config={elevon} onChange={setElevon}
-      onNext={() => setStep('summary')} onBack={() => setStep('flightTimer')} onSkip={() => setStep('summary')} />
+      onNext={() => setStep('landingGear')} onBack={() => setStep('flightTimer')} onSkip={() => setStep('landingGear')} />
   )
 
   if (step === 'vtail') return (
     <StepVTail config={vTail} onChange={setVTail}
-      onNext={() => setStep('summary')} onBack={() => setStep('flightTimer')} onSkip={() => setStep('summary')} />
+      onNext={() => setStep('landingGear')} onBack={() => setStep('flightTimer')} onSkip={() => setStep('landingGear')} />
   )
 
   if (step === 'diffThrust') return (
     <StepDiffThrust config={diffThrust} onChange={setDiffThrust}
-      onNext={() => setStep('summary')} onBack={() => setStep('flightTimer')} onSkip={() => setStep('summary')} />
+      onNext={() => setStep('landingGear')} onBack={() => setStep('flightTimer')} onSkip={() => setStep('landingGear')} />
+  )
+
+  if (step === 'landingGear') return (
+    <StepLandingGear
+      selected={landingGearSw}
+      onSelect={pickLandingGearSw}
+      channel={landingGearCh}
+      onChannelChange={setLandingGearCh}
+      onNext={() => setStep('summary')}
+      onBack={() => {
+        if (isConv(airframe))               setStep('convRevThrust')
+        else if (airframe === 'flyingWing') setStep('elevon')
+        else if (airframe === 'vTail')      setStep('vtail')
+        else if (airframe === 'twinMotor')  setStep('diffThrust')
+        else setStep('flightTimer')
+      }}
+      onSkip={() => { setLandingGearSw(null); setStep('summary') }}
+      usedBy={lgUsedBy}
+    />
   )
 
   return (
@@ -1874,6 +2012,7 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
       flapEleComps={flapEleComps ?? undefined}
       thrRudMix={thrRudMix ?? undefined}
       revThrustSwitch={revThrustSwitch ?? undefined}
+      landingGear={landingGearSw ? { switchId: landingGearSw, channel: landingGearCh } : undefined}
       onFinish={() => onComplete(buildResult())}
       onBack={backFromStep}
     />
