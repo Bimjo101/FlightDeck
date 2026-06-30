@@ -30,7 +30,8 @@ export interface MixWizardResult {
   flightTimer?: {
     mode: 'up' | 'down'
     duration: number     // minutes
-    trigger: 'throttle' | 'always'
+    trigger: 'throttle' | 'always' | 'switch'
+    switchId?: string
     minuteBeeps: boolean
   }
 }
@@ -258,18 +259,20 @@ interface FlightTimerCfg {
   enabled: boolean
   mode: 'up' | 'down'
   duration: number
-  trigger: 'throttle' | 'always'
+  trigger: 'throttle' | 'always' | 'switch'
+  switchId: string | null
   minuteBeeps: boolean
 }
 
 function StepFlightTimer({
-  config, onChange, onNext, onBack, onSkip,
+  config, onChange, onNext, onBack, onSkip, usedBy = {},
 }: {
   config: FlightTimerCfg
   onChange: (c: FlightTimerCfg) => void
   onNext: () => void
   onBack: () => void
   onSkip: () => void
+  usedBy?: Record<string, string>
 }): JSX.Element {
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -323,9 +326,10 @@ function StepFlightTimer({
         {config.enabled && (
           <div className="bg-[#0f172a] border border-[#334155] rounded-2xl p-5 space-y-3">
             <p className="text-[#f1f5f9] text-base font-bold">When does it run?</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {([
                 { val: 'throttle' as const, label: 'Throttle trigger', desc: 'Starts when you add throttle. Pauses at idle.' },
+                { val: 'switch' as const, label: 'Switch trigger', desc: 'Starts/stops with a switch you flip yourself.' },
                 { val: 'always' as const, label: 'Always running', desc: 'Counts the moment the radio powers on.' },
               ]).map(({ val, label, desc }) => (
                 <button
@@ -342,6 +346,28 @@ function StepFlightTimer({
                 </button>
               ))}
             </div>
+
+            {config.trigger === 'switch' && (
+              <div className="space-y-3 pt-1">
+                <p className="text-[#94a3b8] text-sm">
+                  Use the buttons below or tap the switch on the diagram.
+                  {config.switchId && <span className="text-amber-300 font-bold ml-2">{config.switchId} selected ✓</span>}
+                </p>
+                <ControlPicker
+                  selected={config.switchId ?? ''}
+                  onSelect={(id) => onChange({ ...config, switchId: id })}
+                  usedBy={usedBy}
+                />
+                <RadioDiagram
+                  selected={config.switchId ?? ''}
+                  onSelect={(id) => onChange({ ...config, switchId: id })}
+                  usedBy={usedBy}
+                />
+                {!config.switchId && (
+                  <p className="text-red-400 text-xs font-bold">← pick a switch to continue</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -369,7 +395,12 @@ function StepFlightTimer({
           </button>
         )}
 
-        <NavRow onBack={onBack} onNext={onNext} onSkip={onSkip} />
+        <NavRow
+          onBack={onBack}
+          onNext={onNext}
+          onSkip={onSkip}
+          nextDisabled={config.enabled && config.trigger === 'switch' && !config.switchId}
+        />
       </div>
     </div>
   )
@@ -1635,7 +1666,7 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
   const [flapDeploySeconds, setFlapDeploySeconds] = useState(0)
   const [rateAnnouncements, setRateAnnouncements] = useState(false)
   const [flightTimerCfg, setFlightTimerCfg] = useState<FlightTimerCfg>({
-    enabled: false, mode: 'up', duration: 10, trigger: 'throttle', minuteBeeps: true,
+    enabled: false, mode: 'up', duration: 10, trigger: 'throttle', switchId: null, minuteBeeps: true,
   })
 
   const isConv = (af: AirframeType | null) =>
@@ -1645,21 +1676,36 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
   const globalUsedBy: Record<string, string> = {}
   if (rateSwitch) globalUsedBy[rateSwitch] = 'Rates'
 
-  // Per-step usedBy: global + the OTHER function's switch
+  // Per-step usedBy: global + the OTHER functions' switches
+  const ftUsedBy: Record<string, string> = { ...globalUsedBy }
+  if (throttleCutSw) ftUsedBy[throttleCutSw] = 'Throttle Cut'
+  if (revThrustSwitch) ftUsedBy[revThrustSwitch] = 'Reverse Thrust'
+
   const tcUsedBy: Record<string, string> = { ...globalUsedBy }
   if (revThrustSwitch) tcUsedBy[revThrustSwitch] = 'Reverse Thrust'
+  if (flightTimerCfg.switchId) tcUsedBy[flightTimerCfg.switchId] = 'Flight Timer'
 
   const rtUsedBy: Record<string, string> = { ...globalUsedBy }
   if (throttleCutSw) rtUsedBy[throttleCutSw] = 'Throttle Cut'
+  if (flightTimerCfg.switchId) rtUsedBy[flightTimerCfg.switchId] = 'Flight Timer'
 
-  // Deconflict: picking a switch for one function auto-clears it from the other
+  // Deconflict: picking a switch for one function auto-clears it from the others
   const pickThrottleCutSw = (id: string) => {
     setThrottleCutSw(id)
     if (id && revThrustSwitch === id) setRevThrustSwitch(null)
+    if (id && flightTimerCfg.switchId === id) setFlightTimerCfg(prev => ({ ...prev, switchId: null }))
   }
   const pickRevThrustSwitch = (id: string) => {
     setRevThrustSwitch(id)
     if (id && throttleCutSw === id) setThrottleCutSw(null)
+    if (id && flightTimerCfg.switchId === id) setFlightTimerCfg(prev => ({ ...prev, switchId: null }))
+  }
+  const handleFlightTimerChange = (cfg: FlightTimerCfg) => {
+    setFlightTimerCfg(cfg)
+    if (cfg.switchId) {
+      if (throttleCutSw === cfg.switchId) setThrottleCutSw(null)
+      if (revThrustSwitch === cfg.switchId) setRevThrustSwitch(null)
+    }
   }
 
   const buildResult = (): MixWizardResult => ({
@@ -1679,6 +1725,7 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
       mode:         flightTimerCfg.mode,
       duration:     flightTimerCfg.duration,
       trigger:      flightTimerCfg.trigger,
+      switchId:     (flightTimerCfg.trigger === 'switch' && flightTimerCfg.switchId) ? flightTimerCfg.switchId : undefined,
       minuteBeeps:  flightTimerCfg.minuteBeeps,
     } : undefined,
   })
@@ -1740,10 +1787,11 @@ export default function MixWizard({ onComplete, onSkip, rateSwitch }: Props): JS
   if (step === 'flightTimer') return (
     <StepFlightTimer
       config={flightTimerCfg}
-      onChange={setFlightTimerCfg}
+      onChange={handleFlightTimerChange}
       onNext={afterFlightTimer}
       onBack={() => setStep('soundStudio')}
       onSkip={() => { setFlightTimerCfg(prev => ({ ...prev, enabled: false })); afterFlightTimer() }}
+      usedBy={ftUsedBy}
     />
   )
 

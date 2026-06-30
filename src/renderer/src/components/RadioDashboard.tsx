@@ -3243,7 +3243,7 @@ function RadioDashboard({ modelName: modelNameProp, modelId: modelIdProp }: Radi
               Yes — set up Low, Mid, and High rates
             </button>
             <button
-              onClick={finishWizard}
+              onClick={() => setWizardPhase('mixSetup')}
               className="w-full py-3 bg-[#1e293b] hover:bg-[#243044] text-[#94a3b8] text-sm font-medium rounded-2xl border border-[#334155] transition-colors"
             >
               No — skip rates for now
